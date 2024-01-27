@@ -18,12 +18,13 @@ class Expense(BaseModel):
     type: str  # Exact or Percent 
     expenseName: Optional[str] = None
     notes: Optional[str] = None
-    createdAt: str  
+    createdAt: str  = None
     participants: List[Participant]
 
 class Balance(BaseModel):
     userid: str
     BalancesForEveryone: List[Participant]
+
 
 
 
