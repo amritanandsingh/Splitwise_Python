@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from models import User , Expense , Balance , Participant
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+from pydantic import BaseModel, EmailStr
+from starlette.responses import JSONResponse
 from typing import List
+from fastapi import HTTPException
 
 db: List[User] =[
     User(
@@ -82,6 +86,7 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
+    #sendmail("amritanandsingh999@gmail.com", "Test Subject", "Text body", "<p>HTML body</p>")
     return {"Hello": "World"}
 
 @app.get('/api/user/all')
@@ -117,7 +122,10 @@ async def add_expense(expense: Expense):
             return {"message": "Total share amount does not match the expense amount"}
         
         expenses_data.append(expense)
-
+        
+            
+        await mailToParticipants(expense)
+        
         for balance in balance_data:
             if balance.userid == expense.userid:
                 add_expense_helper(balance, expense.participants)
@@ -159,4 +167,67 @@ async def getUserExpence(userid:str):
         if i.userid == userid:
             data = i.BalancesForEveryone
     return data
+
+
+#------------------mail setup --------------------------------
+class EmailSchema(BaseModel):
+    email: List[EmailStr]
+
+conf = ConnectionConfig(
+    MAIL_USERNAME="amritanandsingh0305@gmail.com",
+    MAIL_PASSWORD="evevhxmkcotmkikr",  #  Password 
+    MAIL_FROM="amritanandsingh0305@gmail.com",
+    MAIL_PORT=465,
+    MAIL_SERVER="smtp.gmail.com",  # Use the SMTP server for Gmail
+    MAIL_STARTTLS=False,
+    MAIL_SSL_TLS=True,
+    USE_CREDENTIALS=True,
+    VALIDATE_CERTS=True
+)
+
+html = """
+<p>Thanks for using Splitwise-mail</p> 
+"""
+
+html1 = """
+you have been added to an expense
+"""
+
+@app.post('/api/email')
+async def simple_send(email: EmailSchema) -> JSONResponse:
+    try:
+        message = MessageSchema(
+            subject="Fastapi-Mail module",
+            recipients=email.dict().get("email"),
+            body=html,
+            subtype=MessageType.html)
+
+        fm = FastMail(conf)
+        await fm.send_message(message)
+        return JSONResponse(status_code=200, content={"message": "email has been sent"})
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+async def sendmail(email, subject, body, html_content):
+
+    message = MessageSchema(
+        subject=subject,
+        recipients=[email],
+        body=body,
+        subtype=MessageType.html)
+
+    fm = FastMail(conf)
+    await fm.send_message(message)
+
+async def mailToParticipants(expense):
+    dic = {}
+    for i in expense.participants:
+        dic[i.userid] = i.share
+    for i in db:
+        if dic.get(i.userid) != None:
+            await sendmail(i.email , "You have added to an expence for { dic.get(i.userid) }" , expense.name )
+
+
+
 
