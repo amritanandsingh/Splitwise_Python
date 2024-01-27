@@ -103,7 +103,7 @@ def getAllExpence():
 async def add_expense(expense: Expense):
     try:
         type_of_expense = {"percent", "exact", "equal"}
-
+    
         total_amount = sum(participant.share for participant in expense.participants)
 
         #print(expense.type.lower())
@@ -111,9 +111,11 @@ async def add_expense(expense: Expense):
         if expense.type.lower() not in type_of_expense:
             return {"message": "Error in expense type"}
 
-        if total_amount != expense.amount:
+        if expense.type.lower() == "percent" and total_amount != 100 :
+            return {"message": "Total share percent does not match the expense amount"}
+        elif total_amount != expense.amount:
             return {"message": "Total share amount does not match the expense amount"}
-
+        
         expenses_data.append(expense)
 
         for balance in balance_data:
@@ -139,3 +141,22 @@ def add_expense_helper(balance, expense_participants):
             dic1[userid] = dic1.get(userid, 0) + share
 
     balance.BalancesForEveryone = [{"userid": userid, "share": share} for userid, share in dic1.items()]
+
+@app.get('/api/expence/user')
+async def getUserExpence(userid:str):
+    data = []
+    userid = 'user1'
+    for i in expenses_data:
+        if i.userid == userid:
+            data.append(i)
+    return data
+
+@app.get('/api/expence/user/carryoff/')  # get all the users where there is a non-zero balance
+async def getUserExpence(userid:str):
+    data = []
+    userid = 'user1'
+    for i in balance_data:
+        if i.userid == userid:
+            data = i.BalancesForEveryone
+    return data
+
