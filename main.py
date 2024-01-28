@@ -230,9 +230,11 @@ async def mailToParticipants(expense):
     dic = {}
     for i in expense.participants:
         dic[i.userid] = i.share
+    
     for i in db:
         if dic.get(i.userid) != None:
-            await sendmail(i.email , "You have added to an expence for { dic.get(i.userid) }" , expense.expenseName ,html1 )
+            msg = "you have to pay "+ str(expense.userid) + " Amount :" + str(dic.get(i.userid)) + " For " + str(expense.expenseName)+"."
+            await sendmail(i.email , "You have added to an expence " , msg ,html1 )
 
 
 
