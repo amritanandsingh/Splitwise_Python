@@ -124,15 +124,26 @@ async def add_expense(expense: Expense):
         expenses_data.append(expense)
         
             
-        await mailToParticipants(expense)
+        await mailToParticipants(expense) # send mail
         
+        
+        flag = 0
         for balance in balance_data:
             if balance.userid == expense.userid:
+                flag  = 1
                 add_expense_helper(balance, expense.participants)
                 return {"message": "Successfully added Expense and updated existing Expense"}
-
-        balance_data.append({"userid": expense.userid, "BalancesForEveryone": expense.participants})
-
+        
+        if flag == 0:
+            balance_data.append(
+                Balance(
+                    userid=expense.userid,
+                    BalancesForEveryone=[
+                        Participant(userid=participant.userid, share=participant.share)
+                        for participant in expense.participants
+                    ]
+                )
+            )
         return {"message": "Successfully added Expense"}
 
     except Exception as e:
@@ -153,20 +164,15 @@ def add_expense_helper(balance, expense_participants):
 @app.get('/api/expence/user')
 async def getUserExpence(userid:str):
     data = []
-    userid = 'user1'
-    for i in expenses_data:
+    userid = 'user4'
+    for i in balance_data:
         if i.userid == userid:
             data.append(i)
     return data
 
 @app.get('/api/expence/user/carryoff/')  # get all the users where there is a non-zero balance
-async def getUserExpence(userid:str):
-    data = []
-    userid = 'user1'
-    for i in balance_data:
-        if i.userid == userid:
-            data = i.BalancesForEveryone
-    return data
+async def getUserExpence():
+    return balance_data
 
 
 #------------------mail setup --------------------------------
@@ -226,7 +232,7 @@ async def mailToParticipants(expense):
         dic[i.userid] = i.share
     for i in db:
         if dic.get(i.userid) != None:
-            await sendmail(i.email , "You have added to an expence for { dic.get(i.userid) }" , expense.name )
+            await sendmail(i.email , "You have added to an expence for { dic.get(i.userid) }" , expense.expenseName ,html1 )
 
 
 
