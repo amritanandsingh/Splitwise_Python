@@ -5,6 +5,7 @@ from pydantic import BaseModel, EmailStr
 from starlette.responses import JSONResponse
 from typing import List
 from fastapi import HTTPException
+from fastapi import BackgroundTasks
 
 db: List[User] =[
     User(
@@ -105,7 +106,7 @@ def getAllExpence():
     return expenses_data,balance_data
     
 @app.post('/api/expence/add')
-async def add_expense(expense: Expense):
+async def add_expense(expense: Expense , background_tasks: BackgroundTasks):
     try:
         type_of_expense = {"percent", "exact", "equal"}
     
@@ -124,8 +125,8 @@ async def add_expense(expense: Expense):
         expenses_data.append(expense)
         
             
-        await mailToParticipants(expense) # send mail
-        
+        #await mailToParticipants(expense) # send mail
+        background_tasks.add_task(mailToParticipants, expense)
         
         flag = 0
         for balance in balance_data:
