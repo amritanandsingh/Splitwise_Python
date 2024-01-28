@@ -122,9 +122,12 @@ async def add_expense(expense: Expense , background_tasks: BackgroundTasks):
         elif total_amount != expense.amount:
             return {"message": "Total share amount does not match the expense amount"}
         
+        if expense.type.lower() == "percent" :
+            for i in expense.participants:
+                i.share = (i.share * i.amount)
+             
         expenses_data.append(expense)
         
-            
         #await mailToParticipants(expense) # send mail
         background_tasks.add_task(mailToParticipants, expense)
         
